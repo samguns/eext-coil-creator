@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-Hans">
+	<head>
+		<title>线圈生成器</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<style>
+			input,
+			button {
+				margin: 5px;
+			}
+		</style>
+	</head>
+	<body>
+		<div>
+			<label for="coilNum">线圈圈数:</label>
+			<input type="number" id="coilNum" value="20" min="1" />
+		</div>
+		<div>
+			<label for="innerRadius">内半径:</label>
+			<input type="number" id="innerRadius" value="10" min="1" />
+		</div>
+		<div>
+			<label for="trackSpacing">轨道间距:</label>
+			<input type="number" id="trackSpacing" value="4" min="1" />
+		</div>
+		<div>
+			<label for="trackWidth">轨道宽度:</label>
+			<input type="number" id="trackWidth" value="4" min="1" />
+		</div>
+		<div>
+			<label for="centerX">中心X坐标:</label>
+			<input type="number" id="centerX" value="0" />
+		</div>
+		<div>
+			<label for="centerY">中心Y坐标:</label>
+			<input type="number" id="centerY" value="0" />
+		</div>
+		<button id="generateButton">生成线圈</button>
+
+		<script>
+			/**
+			 *Function 平面螺线圈生成
+			 *输入 线圈圈数，内半径，轨道间距，轨道宽度，线圈中心的X，Y坐标。
+			 *计算路径点
+			 *算法	极坐标转换 x=centerX+r⋅cos(a) y=centerY+r⋅sin(a) r为径向距离 a为角度
+			 *		根据线圈路径从下往上跨越中心线，或从上往下跨越来判断圈数
+			 *输出 绘制线段
+			 */
+			async function drawCoil(coilNum = 100, innerRadius = 10, trackSpacing = 4, trackWidth = 4, centerX = 0, centerY = 0) {
+				const safetyLimit = 1000000; // 限制线圈的段数
+				const angleStep = 0.1; // 角度步长
+				const radiusStep = trackSpacing / 3; // 半径步长
+				let Coils = []; // 线圈数组
+				let radius = innerRadius;
+				let turns = 0; // 线圈圈数
+				let analog = 0;
+				let i = 0;
+
+				while (turns <= coilNum && i < safetyLimit) {
+					analog = angleStep * i;
+					radius = innerRadius + radiusStep * analog;
+					Coils.push({
+						x: centerX + radius * Math.cos(analog),
+						y: centerY + radius * Math.sin(analog),
+					});
+
+					//线圈路径点在Y轴上是否跨越CenterY
+					if (i > 0) {
+						let lastPoint = Coils[Coils.length - 1]; //当前点
+						let secondLastPoint = Coils[Coils.length - 2]; //前一个点
+						//线圈路径从下往上跨越中心线，或从上往下
+						if ((secondLastPoint.y <= centerY && lastPoint.y > centerY) || (secondLastPoint.y < centerY && lastPoint.y >= centerY)) {
+							turns++;
+						}
+					}
+
+					i++;
+				}
+				for (let i = 1; i < Coils.length; i++) {
+					await eda.pcb_PrimitiveLine.create('GND', 1, Coils[i - 1].x, Coils[i - 1].y, Coils[i].x, Coils[i].y, trackWidth * 0.1, false);
+				}
+			}
+
+			document.getElementById('generateButton').addEventListener('click', function () {
+				let coilNum = Number(document.getElementById('coilNum').value);
+				let innerRadius = Number(document.getElementById('innerRadius').value);
+				let trackSpacing = Number(document.getElementById('trackSpacing').value);
+				let trackWidth = Number(document.getElementById('trackWidth').value);
+				let centerX = Number(document.getElementById('centerX').value);
+				let centerY = Number(document.getElementById('centerY').value);
+
+				drawCoil(coilNum, innerRadius, trackSpacing, trackWidth, centerX, centerY);
+			});
+		</script>
+	</body>
+</html>

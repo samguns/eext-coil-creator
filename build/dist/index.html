@@ -1,0 +1,1182 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+    <title>线圈生成器</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        :root {
+            --bg: #f0f2f5;
+            --surface: #ffffff;
+            --border: #e2e5ea;
+            --text: #1a1a2e;
+            --text-secondary: #6b7280;
+            --text-muted: #9ca3af;
+            --primary: #1565c0;
+            --primary-light: #e8f0fe;
+            --primary-hover: #0d47a1;
+            --danger: #ef4444;
+            --radius: 10px;
+            --radius-sm: 6px;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.05), 0 2px 4px rgba(0, 0, 0, 0.04);
+            --transition: 0.2s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 12px;
+            -webkit-font-smoothing: antialiased;
+            user-select: none;
+        }
+
+        .panel {
+            max-width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 2px 4px;
+        }
+
+        .header-logo {
+            width: 22px;
+            height: 22px;
+            border-radius: 4px;
+            object-fit: contain;
+        }
+
+        .header-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+            letter-spacing: -0.01em;
+        }
+
+        .header-version {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 400;
+            margin-left: 4px;
+        }
+
+        .section {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 10px 12px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+        }
+
+        .section-label {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .coil-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+
+        .coil-card {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 4px 6px;
+            border-radius: var(--radius-sm);
+            border: 1.5px solid var(--border);
+            background: var(--surface);
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .coil-card:hover {
+            border-color: #94a3b8;
+            box-shadow: var(--shadow);
+        }
+
+        .coil-card input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .coil-card:has(input:checked) {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            box-shadow: 0 0 0 1px var(--primary);
+        }
+
+        .coil-card:has(input:checked) .coil-icon {
+            color: var(--primary);
+        }
+
+        .coil-card:has(input:checked) .coil-name {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .coil-icon {
+            width: 28px;
+            height: 28px;
+            color: var(--text-secondary);
+            transition: color var(--transition);
+        }
+
+        .coil-name {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-align: center;
+            line-height: 1.2;
+            transition: color var(--transition);
+        }
+
+        .param-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 10px;
+        }
+
+        .param-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .param-item label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            width: 88px;
+            flex-shrink: 0;
+            text-align: right;
+        }
+
+        .param-item input[type="number"] {
+            flex: 1;
+            width: 100%;
+            padding: 5px 8px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            color: var(--text);
+            background: #fafbfc;
+            transition: all var(--transition);
+            font-family: inherit;
+            outline: none;
+            min-width: 0;
+        }
+
+        .param-item input[type="number"]:focus {
+            border-color: var(--primary);
+            background: var(--surface);
+            box-shadow: 0 0 0 2px rgba(21, 101, 192, 0.12);
+        }
+
+        .param-item input[type="number"]::-webkit-inner-spin-button,
+        .param-item input[type="number"]::-webkit-outer-spin-button {
+            opacity: 1;
+        }
+
+        .param-unit {
+            font-size: 11px;
+            color: var(--text-muted);
+            flex-shrink: 0;
+            width: 24px;
+            text-align: left;
+        }
+
+        .output-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px 10px;
+        }
+
+        .output-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: 3px 0;
+        }
+
+        .output-label {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .output-value {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .output-inductance {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            padding: 4px 0;
+            margin-bottom: 4px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .output-inductance .output-label {
+            font-size: 11px;
+        }
+
+        .output-inductance .output-value {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .output-inductance .output-warning {
+            font-size: 10px;
+            color: var(--text-muted);
+            font-style: italic;
+            margin-left: auto;
+        }
+
+        .output-unit {
+            font-size: 10px;
+            font-weight: 400;
+            color: var(--text-muted);
+            margin-left: 1px;
+        }
+
+        .output-warning {
+            font-size: 10px;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .output-advanced {
+            border-top: 1px dashed var(--border);
+            margin-top: 6px;
+            padding-top: 6px;
+        }
+
+        .output-advanced .output-row {
+            padding: 2px 0;
+        }
+
+        .advanced-section {
+        }
+
+        .advanced-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .advanced-header .section-label {
+            margin-bottom: 0;
+        }
+
+        .advanced-arrow {
+            color: var(--text-muted);
+            transition: transform var(--transition);
+            flex-shrink: 0;
+        }
+
+        .advanced-header.expanded .advanced-arrow {
+            transform: rotate(180deg);
+        }
+
+        .advanced-content {
+            margin-top: 8px;
+            overflow: hidden;
+            transition: max-height 0.3s ease, margin-top 0.3s ease;
+        }
+
+        .advanced-content.collapsed {
+            max-height: 0;
+            margin-top: 0;
+        }
+
+        .bottom-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .lang-toggle {
+            flex-shrink: 0;
+            position: relative;
+            display: flex;
+            align-items: center;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .lang-toggle input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .lang-option {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 26px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 18px;
+            cursor: pointer;
+            transition: all var(--transition);
+            color: var(--text-muted);
+            z-index: 1;
+        }
+
+        .lang-toggle input:checked + .lang-option.cn + .lang-option.en,
+        .lang-toggle input:not(:checked) + .lang-option.cn {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .lang-toggle input:checked + .lang-option.cn {
+            color: var(--text-muted);
+        }
+
+        .unit-toggle {
+            flex-shrink: 0;
+            position: relative;
+            display: flex;
+            align-items: center;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .unit-toggle input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .unit-option {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 26px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 18px;
+            cursor: pointer;
+            transition: all var(--transition);
+            color: var(--text-muted);
+            z-index: 1;
+        }
+
+        .unit-toggle input:checked + .unit-option.mil + .unit-option.mm,
+        .unit-toggle input:not(:checked) + .unit-option.mil {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .unit-toggle input:checked + .unit-option.mil {
+            color: var(--text-muted);
+        }
+
+        .generate-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 8px 16px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition);
+            font-family: inherit;
+            letter-spacing: 0.02em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .generate-btn:hover {
+            background: var(--primary-hover);
+            box-shadow: 0 2px 8px rgba(21, 101, 192, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .generate-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 3px rgba(21, 101, 192, 0.2);
+        }
+
+        .generate-btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .generate-icon {
+            width: 14px;
+            height: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="panel">
+        <div class="header">
+            <img class="header-logo" src="/images/logo.png" alt="logo" onerror="this.style.display='none'" />
+            <span class="header-title" id="headerTitle">线圈生成器</span>
+            <span class="header-version">v1.3.0</span>
+        </div>
+
+        <div class="section">
+            <div class="section-label" id="coilTypeLabel">线圈类型</div>
+            <div class="coil-cards">
+                <label class="coil-card">
+                    <input type="radio" name="coilType" value="spiral" checked />
+                    <svg class="coil-icon" viewBox="0 0 32 32" fill="none">
+                        <path d="M16 6 A10 10 0 1 1 6 16" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+                        <path d="M16 10.5 A5.5 5.5 0 1 1 10.5 16" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+                        <circle cx="16" cy="16" r="2" fill="currentColor"/>
+                    </svg>
+                    <span class="coil-name" data-cn="螺旋线圈" data-en="Spiral Coil">螺旋线圈</span>
+                </label>
+                <label class="coil-card">
+                    <input type="radio" name="coilType" value="square" />
+                    <svg class="coil-icon" viewBox="0 0 32 32" fill="none">
+                        <rect x="4" y="4" width="24" height="24" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                        <rect x="9" y="9" width="14" height="14" rx="1.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                        <rect x="13.5" y="13.5" width="5" height="5" rx="1" fill="currentColor"/>
+                    </svg>
+                    <span class="coil-name" data-cn="方形线圈" data-en="Square Coil">方形线圈</span>
+                </label>
+                <label class="coil-card">
+                    <input type="radio" name="coilType" value="hexagon" />
+                    <svg class="coil-icon" viewBox="0 0 32 32" fill="none">
+                        <polygon points="16,3 28,10 28,22 16,29 4,22 4,10" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+                        <polygon points="16,8 23,12 23,20 16,24 9,20 9,12" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+                        <circle cx="16" cy="16" r="2" fill="currentColor"/>
+                    </svg>
+                    <span class="coil-name" data-cn="六边形线圈" data-en="Hexagonal Coil">六边形线圈</span>
+                </label>
+                <label class="coil-card">
+                    <input type="radio" name="coilType" value="octagon" />
+                    <svg class="coil-icon" viewBox="0 0 32 32" fill="none">
+                        <polygon points="16,2 25,7 29,16 25,25 16,29 7,25 3,16 7,7" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+                        <polygon points="16,7 21,10 24,16 21,22 16,25 11,22 8,16 11,10" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+                        <circle cx="16" cy="16" r="2" fill="currentColor"/>
+                    </svg>
+                    <span class="coil-name" data-cn="八边形线圈" data-en="Octagonal Coil">八边形线圈</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-label" id="paramsLabel">参数设置</div>
+            <div class="param-grid">
+                <div class="param-item">
+                    <label id="coilNumLabel" for="coilNum">圈数:</label>
+                    <input type="number" id="coilNum" value="10" min="1" />
+                </div>
+                <div class="param-item">
+                    <label id="innerRadiusLabel" for="innerRadius">内半径:</label>
+                    <input type="number" id="innerRadius" value="20" min="1" />
+                </div>
+                <div class="param-item">
+                    <label id="trackSpacingLabel" for="trackSpacing">轨道间距:</label>
+                    <input type="number" id="trackSpacing" value="20" min="1" />
+                </div>
+                <div class="param-item">
+                    <label id="trackWidthLabel" for="trackWidth">轨道宽度:</label>
+                    <input type="number" id="trackWidth" value="4" min="1" />
+                </div>
+                <div class="param-item">
+                    <label id="centerXLabel" for="centerX">中心X:</label>
+                    <input type="number" id="centerX" value="0" />
+                </div>
+                <div class="param-item">
+                    <label id="centerYLabel" for="centerY">中心Y:</label>
+                    <input type="number" id="centerY" value="0" />
+                </div>
+            </div>
+        </div>
+
+        <div class="section advanced-section" id="advancedSection">
+            <div class="advanced-header" id="advancedToggle">
+                <div class="section-label" id="advancedLabel">高级设置</div>
+                <svg class="advanced-arrow" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div class="advanced-content collapsed" id="advancedContent">
+                <div class="param-grid">
+                    <div class="param-item">
+                        <label id="capacitanceLabel" for="capacitance">谐振电容:</label>
+                        <span class="param-unit">(pF)</span>
+                        <input type="number" id="capacitance" value="0" min="0" max="10000" step="1" />
+                    </div>
+                    <div class="param-item">
+                        <label id="copperThicknessLabel" for="copperThickness">铜厚:</label>
+                        <span class="param-unit">(oz)</span>
+                        <input type="number" id="copperThickness" value="1" min="0.5" max="5" step="0.5" />
+                    </div>
+                    <div class="param-item">
+                        <label id="temperatureLabel" for="temperature">温度:</label>
+                        <span class="param-unit">(°C)</span>
+                        <input type="number" id="temperature" value="25" min="-40" max="125" step="1" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-label" id="outputLabel">计算结果</div>
+            <div class="output-inductance">
+                <span class="output-label" id="inductancePrefix">电感:</span>
+                <span class="output-value" id="inductance">—</span>
+                <span class="output-warning" id="externalWarring">电感值仅供参考</span>
+            </div>
+            <div class="output-grid">
+                <div class="output-row">
+                    <span class="output-label" id="externalRadiusPrefix">外半径:</span>
+                    <span class="output-value"><span id="externalRadiusDisplay">—</span> <span class="output-unit" id="externalRadiusUnit">mil</span></span>
+                </div>
+                <div class="output-row">
+                    <span class="output-label" id="externalDiameterPrefix">外直径:</span>
+                    <span class="output-value"><span id="externalDiameterDisplay">—</span> <span class="output-unit" id="externalDiameterUnit">mil</span></span>
+                </div>
+                <div class="output-row">
+                    <span class="output-label" id="averageDiameterPrefix">平均直径:</span>
+                    <span class="output-value"><span id="averageDiameterDisplay">—</span> <span class="output-unit" id="averageDiameterUnit">mil</span></span>
+                </div>
+                <div class="output-row">
+                    <span class="output-label" id="coilFillRatioPrefix">填充比:</span>
+                    <span class="output-value" id="coilFillRatioDisplay">—</span>
+                </div>
+                <div class="output-row">
+                    <span class="output-label" id="coilTotalLengthPrefix">线圈总长:</span>
+                    <span class="output-value"><span id="coilTotalLengthDisplay">—</span> <span class="output-unit" id="coilTotalLengthUnit">mil</span></span>
+                </div>
+            </div>
+            <div class="output-advanced" id="outputAdvanced">
+                <div class="output-row">
+                    <span class="output-label" id="dcResistancePrefix">直流电阻:</span>
+                    <span class="output-value" id="dcResistanceDisplay">—</span>
+                </div>
+                <div class="output-row">
+                    <span class="output-label" id="skinDepthPrefix">趋肤深度:</span>
+                    <span class="output-value" id="skinDepthDisplay">—</span>
+                </div>
+                <div class="output-row">
+                    <span class="output-label" id="acResistancePrefix">交流电阻:</span>
+                    <span class="output-value" id="acResistanceDisplay">—</span>
+                </div>
+                <div class="output-row">
+                    <span class="output-label" id="qFactorPrefix">Q值:</span>
+                    <span class="output-value" id="qFactorDisplay">—</span>
+                </div>
+                <div class="output-row">
+                    <span class="output-label" id="resonantFreqPrefix">谐振频率:</span>
+                    <span class="output-value" id="resonantFreqDisplay">—</span>
+                </div>
+                <div class="output-row">
+                    <span class="output-label" id="resonantImpedancePrefix">谐振阻抗:</span>
+                    <span class="output-value" id="resonantImpedanceDisplay">—</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-bar">
+            <div class="lang-toggle">
+                <input value="1" id="color_mode" name="color_mode" type="checkbox" />
+                <label class="lang-option cn" for="color_mode">CN</label>
+                <label class="lang-option en" for="color_mode">EN</label>
+            </div>
+            <div class="unit-toggle">
+                <input value="1" id="unit_mode" name="unit_mode" type="checkbox" />
+                <label class="unit-option mil" for="unit_mode">mil</label>
+                <label class="unit-option mm" for="unit_mode">mm</label>
+            </div>
+            <button class="generate-btn" id="generateButton">
+                <svg class="generate-icon" viewBox="0 0 16 16" fill="none">
+                    <path d="M8 2 L8 10 M4 8 L8 12 L12 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span id="generateText">生成</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const languages = {
+                cn: {
+                    coilNum: '圈数:',
+                    innerRadius: '内半径:',
+                    trackSpacing: '轨道间距:',
+                    trackWidth: '轨道宽度:',
+                    centerX: '中心X:',
+                    centerY: '中心Y:',
+                    inductance: '电感:',
+                    externalRadiusMM: '外半径:',
+                    externalDiameterMM: '外直径:',
+                    averageDiameterMM: '平均直径:',
+                    coilFillRatio: '填充比:',
+                    coilTotalLength: '线圈总长:',
+                    externalWarring: '电感值仅供参考',
+                    solenoid: '螺旋线圈',
+                    squareCoil: '方形线圈',
+                    hexagonCoil: '六边形线圈',
+                    octagonCoil: '八边形线圈',
+                    generate: '生成',
+                    headerTitle: '线圈生成器',
+                    coilTypeLabel: '线圈类型',
+                    paramsLabel: '参数设置',
+                    advancedLabel: '高级设置',
+                    outputLabel: '计算结果',
+                    capacitance: '谐振电容:',
+                    resonantFreq: '谐振频率:',
+                    resonantImpedance: '谐振阻抗:',
+                    copperThickness: '铜厚:',
+                    temperature: '温度:',
+                    dcResistance: '直流电阻:',
+                    skinDepth: '趋肤深度:',
+                    acResistance: '交流电阻:',
+                    qFactor: 'Q值:',
+                    unitMilLabel: ' (mil)',
+                    unitMmLabel: ' (mm)',
+                },
+                en: {
+                    coilNum: 'Turns:',
+                    innerRadius: 'Inner radius:',
+                    trackSpacing: 'Spacing:',
+                    trackWidth: 'Width:',
+                    centerX: 'Center X:',
+                    centerY: 'Center Y:',
+                    inductance: 'Inductance:',
+                    externalRadiusMM: 'Outer radius:',
+                    externalDiameterMM: 'Outer diameter:',
+                    averageDiameterMM: 'Avg Diameter:',
+                    coilFillRatio: 'Fill Ratio:',
+                    coilTotalLength: 'Coil Length:',
+                    externalWarring: 'Inductance value for reference only',
+                    solenoid: 'Spiral Coil',
+                    squareCoil: 'Square Coil',
+                    hexagonCoil: 'Hexagonal Coil',
+                    octagonCoil: 'Octagonal Coil',
+                    generate: 'Generate',
+                    headerTitle: 'Coil Creator',
+                    coilTypeLabel: 'Coil Type',
+                    paramsLabel: 'Parameters',
+                    advancedLabel: 'Advanced',
+                    outputLabel: 'Results',
+                    capacitance: 'Capacitance:',
+                    resonantFreq: 'Resonant Freq:',
+                    resonantImpedance: 'Resonant Impedance:',
+                    copperThickness: 'Cu Thickness:',
+                    temperature: 'Temperature:',
+                    dcResistance: 'DC Resistance:',
+                    skinDepth: 'Skin Depth:',
+                    acResistance: 'AC Resistance:',
+                    qFactor: 'Q Factor:',
+                    unitMilLabel: ' (mil)',
+                    unitMmLabel: ' (mm)',
+                },
+            };
+            let currentLanguage = 'cn';
+            let currentUnit = 'mil';
+            let advancedExpanded = false;
+
+            function switchLanguage() {
+                currentLanguage = currentLanguage === 'cn' ? 'en' : 'cn';
+                updateLanguage();
+            }
+
+            function switchUnit() {
+                currentUnit = currentUnit === 'mil' ? 'mm' : 'mil';
+                updateLanguage();
+                outputParameters();
+            }
+
+            function getSelectedCoilType() {
+                const checked = document.querySelector('input[name="coilType"]:checked');
+                return checked ? checked.value : 'spiral';
+            }
+
+            function toggleAdvanced() {
+                advancedExpanded = !advancedExpanded;
+                const header = document.getElementById('advancedToggle');
+                const content = document.getElementById('advancedContent');
+                if (advancedExpanded) {
+                    header.classList.add('expanded');
+                    content.classList.remove('collapsed');
+                } else {
+                    header.classList.remove('expanded');
+                    content.classList.add('collapsed');
+                }
+            }
+
+            function calcSpiralLength(coilNum, innerRadius, trackSpacing, trackWidth) {
+                const angleStep = 0.1;
+                const radiusStep = (trackSpacing + trackWidth) / (2 * Math.PI);
+                const totalAngle = coilNum * 2 * Math.PI;
+                const steps = Math.floor(totalAngle / angleStep);
+                let total = 0;
+                let px = innerRadius;
+                let py = 0;
+                for (let i = 1; i <= steps; i++) {
+                    const a = angleStep * i;
+                    const r = innerRadius + radiusStep * a;
+                    const cx = r * Math.cos(a);
+                    const cy = r * Math.sin(a);
+                    total += Math.sqrt((cx - px) * (cx - px) + (cy - py) * (cy - py));
+                    px = cx;
+                    py = cy;
+                }
+                return total;
+            }
+
+            function calcSquareLength(coilNum, innerRadius, trackSpacing, trackWidth) {
+                var step = trackSpacing + trackWidth;
+                let total = 2 * innerRadius;
+                for (let i = 1; i <= coilNum; i++) {
+                    total += 2 * innerRadius + 2 * (i - 1) * step;
+                    total += 2 * innerRadius + 2 * (i - 1) * step;
+                    total += 2 * innerRadius + (2 * i - 1) * step;
+                    total += 2 * innerRadius + (2 * i - 1) * step;
+                }
+                return total;
+            }
+
+            function calcHexagonLength(coilNum, innerRadius, trackSpacing, trackWidth) {
+                const delta = (trackSpacing + trackWidth) / 6;
+                const L0 = innerRadius / 2;
+                const segments = coilNum * 6;
+                return segments * L0 + delta * (segments - 1) * segments / 2;
+            }
+
+            function calcOctagonLength(coilNum, innerRadius, trackSpacing, trackWidth) {
+                const delta = (trackSpacing + trackWidth) / 8;
+                const L0 = innerRadius / 2;
+                const segments = coilNum * 8;
+                return segments * L0 + delta * (segments - 1) * segments / 2;
+            }
+
+            function calcCoilLength(coilType, coilNum, innerRadius, trackSpacing, trackWidth) {
+                if (coilType === 'spiral') {
+                    return calcSpiralLength(coilNum, innerRadius, trackSpacing, trackWidth);
+                } else if (coilType === 'square') {
+                    return calcSquareLength(coilNum, innerRadius, trackSpacing, trackWidth);
+                } else if (coilType === 'hexagon') {
+                    return calcHexagonLength(coilNum, innerRadius, trackSpacing, trackWidth);
+                } else if (coilType === 'octagon') {
+                    return calcOctagonLength(coilNum, innerRadius, trackSpacing, trackWidth);
+                }
+                return 0;
+            }
+
+            async function drawCoil(coilNum = 100, innerRadius = 10, trackSpacing = 4, trackWidth = 4, centerX = 0, centerY = 0) {
+                const safetyLimit = 1000000;
+                const angleStep = 0.1;
+                const radiusStep = (trackSpacing + trackWidth) / (2 * Math.PI);
+                let Coils = [];
+                let radius = innerRadius;
+                let turns = 0;
+                let analog = 0;
+                let i = 0;
+
+                while (turns <= coilNum && i < safetyLimit) {
+                    analog = angleStep * i;
+                    radius = innerRadius + radiusStep * analog;
+                    Coils.push({
+                        x: centerX + radius * Math.cos(analog),
+                        y: centerY + radius * Math.sin(analog),
+                    });
+
+                    if (i > 0) {
+                        let lastPoint = Coils[Coils.length - 1];
+                        let secondLastPoint = Coils[Coils.length - 2];
+                        if ((secondLastPoint.y <= centerY && lastPoint.y > centerY) || (secondLastPoint.y < centerY && lastPoint.y >= centerY)) {
+                            turns++;
+                        }
+                    }
+
+                    i++;
+                }
+                for (let i = 1; i < Coils.length; i++) {
+                    await eda.pcb_PrimitiveLine.create('GND', 1, Coils[i - 1].x, Coils[i - 1].y, Coils[i].x, Coils[i].y, trackWidth, false);
+                }
+            }
+
+            async function drawSquareCoil(coilNum = 20, innerRadius = 10, trackSpacing = 10, trackWidth = 4, centerX = 0, centerY = 0) {
+                let x1 = centerX;
+                let y1 = centerY;
+                let x2 = centerX;
+                let y2 = centerY;
+
+                x2 += innerRadius;
+                await eda.pcb_PrimitiveLine.create('GND', 1, x1, y1, x2, y2, trackWidth, false);
+
+                x1 = x2;
+                y1 = y2;
+
+                y2 += innerRadius;
+                await eda.pcb_PrimitiveLine.create('GND', 1, x1, y1, x2, y2, trackWidth, false);
+                x1 = x2;
+                y1 = y2;
+
+                for (let i = 1; i <= coilNum; i++) {
+                    let j = 0;
+                    if (j == 0) {
+                        x2 = x2 - (2 * innerRadius + 2 * (i - 1) * (trackSpacing + trackWidth));
+                        await eda.pcb_PrimitiveLine.create('GND', 1, x1, y1, x2, y2, trackWidth, false);
+                        x1 = x2;
+                        y1 = y2;
+                        j++;
+                    }
+                    if (j == 1) {
+                        y2 = y2 - (2 * innerRadius + 2 * (i - 1) * (trackSpacing + trackWidth));
+                        await eda.pcb_PrimitiveLine.create('GND', 1, x1, y1, x2, y2, trackWidth, false);
+                        x1 = x2;
+                        y1 = y2;
+                        j++;
+                    }
+                    if (j == 2) {
+                        x2 = x2 + (2 * innerRadius + (2 * i - 1) * (trackSpacing + trackWidth));
+                        await eda.pcb_PrimitiveLine.create('GND', 1, x1, y1, x2, y2, trackWidth, false);
+                        x1 = x2;
+                        y1 = y2;
+                        j++;
+                    }
+                    if (j == 3) {
+                        y2 = y2 + (2 * innerRadius + (2 * i - 1) * (trackSpacing + trackWidth));
+                        await eda.pcb_PrimitiveLine.create('GND', 1, x1, y1, x2, y2, trackWidth, false);
+                        x1 = x2;
+                        y1 = y2;
+                        j++;
+                    }
+                    j = 0;
+                }
+            }
+
+            async function drawHexagonCoil(coilNum = 10, innerRadius = 20, trackSpacing = 20, trackWidth = 4, centerX = 0, centerY = 0) {
+                const delta = (trackSpacing + trackWidth) / 6;
+                const L0 = innerRadius / 2;
+                const totalSegments = coilNum * 6;
+
+                let x = centerX;
+                let y = centerY;
+
+                for (let n = 0; n < totalSegments; n++) {
+                    const segmentLength = L0 + n * delta;
+                    const angleRad = n * Math.PI / 3;
+                    const x2 = x + segmentLength * Math.cos(angleRad);
+                    const y2 = y + segmentLength * Math.sin(angleRad);
+
+                    if (segmentLength > 0) {
+                        await eda.pcb_PrimitiveLine.create('GND', 1, x, y, x2, y2, trackWidth, false);
+                    }
+
+                    x = x2;
+                    y = y2;
+                }
+            }
+
+            async function drawOctagonCoil(coilNum = 10, innerRadius = 20, trackSpacing = 20, trackWidth = 4, centerX = 0, centerY = 0) {
+                const delta = (trackSpacing + trackWidth) / 8;
+                const L0 = innerRadius / 2;
+                const totalSegments = coilNum * 8;
+
+                let x = centerX;
+                let y = centerY;
+
+                for (let n = 0; n < totalSegments; n++) {
+                    const segmentLength = L0 + n * delta;
+                    const angleRad = n * Math.PI / 4;
+                    const x2 = x + segmentLength * Math.cos(angleRad);
+                    const y2 = y + segmentLength * Math.sin(angleRad);
+
+                    if (segmentLength > 0) {
+                        await eda.pcb_PrimitiveLine.create('GND', 1, x, y, x2, y2, trackWidth, false);
+                    }
+
+                    x = x2;
+                    y = y2;
+                }
+            }
+
+            function updateUnitDisplay() {
+                const unit = currentUnit;
+                document.querySelectorAll('.output-unit').forEach(function (el) {
+                    el.textContent = unit;
+                });
+            }
+
+            function updateLanguage() {
+                const lang = languages[currentLanguage];
+                const unitSuffix = currentUnit === 'mil' ? lang.unitMilLabel : lang.unitMmLabel;
+
+                document.getElementById('coilNumLabel').textContent = lang.coilNum;
+                document.getElementById('innerRadiusLabel').textContent = lang.innerRadius + unitSuffix;
+                document.getElementById('trackSpacingLabel').textContent = lang.trackSpacing + unitSuffix;
+                document.getElementById('trackWidthLabel').textContent = lang.trackWidth + unitSuffix;
+                document.getElementById('centerXLabel').textContent = lang.centerX + unitSuffix;
+                document.getElementById('centerYLabel').textContent = lang.centerY + unitSuffix;
+
+                document.getElementById('advancedLabel').textContent = lang.advancedLabel;
+                document.getElementById('capacitanceLabel').textContent = lang.capacitance;
+                document.getElementById('copperThicknessLabel').textContent = lang.copperThickness;
+                document.getElementById('temperatureLabel').textContent = lang.temperature;
+
+                document.getElementById('inductancePrefix').textContent = lang.inductance;
+                document.getElementById('externalRadiusPrefix').textContent = lang.externalRadiusMM;
+                document.getElementById('externalDiameterPrefix').textContent = lang.externalDiameterMM;
+                document.getElementById('averageDiameterPrefix').textContent = lang.averageDiameterMM;
+                document.getElementById('coilFillRatioPrefix').textContent = lang.coilFillRatio;
+                document.getElementById('coilTotalLengthPrefix').textContent = lang.coilTotalLength;
+                document.getElementById('externalWarring').textContent = lang.externalWarring;
+                document.getElementById('resonantFreqPrefix').textContent = lang.resonantFreq;
+                document.getElementById('resonantImpedancePrefix').textContent = lang.resonantImpedance;
+                document.getElementById('dcResistancePrefix').textContent = lang.dcResistance;
+                document.getElementById('skinDepthPrefix').textContent = lang.skinDepth;
+                document.getElementById('acResistancePrefix').textContent = lang.acResistance;
+                document.getElementById('qFactorPrefix').textContent = lang.qFactor;
+
+                document.querySelectorAll('.coil-name').forEach(function (el) {
+                    el.textContent = el.getAttribute('data-' + currentLanguage);
+                });
+
+                document.getElementById('generateText').textContent = lang.generate;
+                document.getElementById('headerTitle').textContent = lang.headerTitle;
+
+                var coilTypeLabel = document.getElementById('coilTypeLabel');
+                if (coilTypeLabel) coilTypeLabel.textContent = lang.coilTypeLabel;
+
+                var paramsLabel = document.getElementById('paramsLabel');
+                if (paramsLabel) paramsLabel.textContent = lang.paramsLabel;
+
+                var outputLabel = document.getElementById('outputLabel');
+                if (outputLabel) outputLabel.textContent = lang.outputLabel;
+
+                updateUnitDisplay();
+            }
+
+            document.getElementById('color_mode').addEventListener('change', switchLanguage);
+            document.getElementById('advancedToggle').addEventListener('click', toggleAdvanced);
+
+            updateLanguage();
+            outputParameters();
+
+            function outputParameters() {
+                var coilNum = Number(document.getElementById('coilNum').value);
+                var innerRadius = Number(document.getElementById('innerRadius').value);
+                var trackSpacing = Number(document.getElementById('trackSpacing').value);
+                var trackWidth = Number(document.getElementById('trackWidth').value);
+                var coilType = getSelectedCoilType();
+
+                var rInt = innerRadius;
+                var rExt;
+
+                if (coilType === 'spiral') {
+                    rExt = rInt + coilNum * (trackSpacing + trackWidth);
+                } else if (coilType === 'square') {
+                    rExt = (rInt + coilNum * (trackSpacing + trackWidth)) * Math.SQRT2;
+                } else if (coilType === 'hexagon') {
+                    rExt = rInt / 2 + coilNum * (trackSpacing + trackWidth);
+                } else if (coilType === 'octagon') {
+                    rExt = (rInt / 2 + coilNum * (trackSpacing + trackWidth)) * 1.3014;
+                } else {
+                    rExt = rInt + (coilNum + 1) * (trackSpacing + trackWidth);
+                }
+
+                document.getElementById('externalRadiusDisplay').textContent = rExt.toLocaleString();
+                document.getElementById('externalDiameterDisplay').textContent = (rExt * 2).toLocaleString();
+
+                var avgDiameter = rInt + rExt;
+                var fillRatio = rExt > rInt ? (rExt - rInt) / (rExt + rInt) : 0;
+                document.getElementById('averageDiameterDisplay').textContent = avgDiameter.toLocaleString();
+                document.getElementById('coilFillRatioDisplay').textContent = fillRatio.toFixed(3);
+
+                var innerRadiusMil = currentUnit === 'mm' ? innerRadius / 0.0254 : innerRadius;
+                var trackWidthMil = currentUnit === 'mm' ? trackWidth / 0.0254 : trackWidth;
+                var trackSpacingMil = currentUnit === 'mm' ? trackSpacing / 0.0254 : trackSpacing;
+
+                var coilLengthMil = calcCoilLength(coilType, coilNum, innerRadiusMil, trackSpacingMil, trackWidthMil);
+                var coilLengthDisplay = currentUnit === 'mm' ? coilLengthMil * 0.0254 : coilLengthMil;
+                document.getElementById('coilTotalLengthDisplay').textContent = coilLengthDisplay.toLocaleString();
+
+                var N = coilNum;
+                var Di = (innerRadiusMil / 1000) * 2;
+                var A = (Di + N * (trackWidthMil / 1000 + trackSpacingMil / 1000)) / 2;
+
+                var inductance_uH = (Math.pow(A, 2) * Math.pow(N, 2)) / (30 * A - 11 * Di);
+
+                var shapeFactor = {
+                    spiral: 1.00,
+                    square: 1.18,
+                    hexagon: 1.10,
+                    octagon: 1.05
+                }[coilType] || 1.00;
+
+                inductance_uH *= shapeFactor;
+                var inductance_H = inductance_uH * 1e-6;
+
+                if (inductance_H >= 1) {
+                    document.getElementById('inductance').innerText = inductance_H.toLocaleString() + " H";
+                } else if (inductance_H >= 1e-3) {
+                    document.getElementById('inductance').innerText = (inductance_H * 1e3).toLocaleString() + " mH";
+                } else if (inductance_H >= 1e-6) {
+                    document.getElementById('inductance').innerText = (inductance_H * 1e6).toLocaleString() + " \u03bcH";
+                } else if (inductance_H >= 1e-9) {
+                    document.getElementById('inductance').innerText = (inductance_H * 1e9).toLocaleString() + " nH";
+                } else if (inductance_H >= 1e-12) {
+                    document.getElementById('inductance').innerText = (inductance_H * 1e12).toLocaleString() + " pH";
+                } else if (inductance_H >= 1e-15) {
+                    document.getElementById('inductance').innerText = (inductance_H * 1e15).toLocaleString() + " fH";
+                } else {
+                    document.getElementById('inductance').innerText = '\u7535\u611f\u503c\u8fc7\u5c0f';
+                }
+
+                var copperThicknessOz = Number(document.getElementById('copperThickness').value) || 1;
+                var temperatureC = Number(document.getElementById('temperature').value) || 25;
+                var tMils = copperThicknessOz * 1.37;
+                var rho_25 = 1.72e-8;
+                var alpha = 0.00393;
+                var rho = rho_25 * (1 + alpha * (temperatureC - 25));
+                var rhoDivK = 7.52e-4;
+                if (trackWidthMil > 0 && coilLengthMil > 0) {
+                    var rdc = rhoDivK * (1 + alpha * (temperatureC - 25)) * coilLengthMil / (trackWidthMil * tMils);
+                    if (rdc >= 1) {
+                        document.getElementById('dcResistanceDisplay').textContent = rdc.toFixed(2) + ' \u03A9';
+                    } else if (rdc >= 1e-3) {
+                        document.getElementById('dcResistanceDisplay').textContent = (rdc * 1e3).toFixed(2) + ' m\u03A9';
+                    } else {
+                        document.getElementById('dcResistanceDisplay').textContent = (rdc * 1e6).toFixed(2) + ' \u03bc\u03A9';
+                    }
+                } else {
+                    document.getElementById('dcResistanceDisplay').textContent = '----';
+                }
+
+                var capacitance = Number(document.getElementById('capacitance').value) || 0;
+                var resonantFreqHz = 0;
+                if (capacitance > 0 && inductance_H > 0) {
+                    resonantFreqHz = 1 / (2 * Math.PI * Math.sqrt(inductance_H * capacitance * 1e-12));
+                    if (resonantFreqHz >= 1e6) {
+                        document.getElementById('resonantFreqDisplay').textContent = (resonantFreqHz / 1e6).toFixed(2) + ' MHz';
+                    } else if (resonantFreqHz >= 1e3) {
+                        document.getElementById('resonantFreqDisplay').textContent = (resonantFreqHz / 1e3).toFixed(1) + ' kHz';
+                    } else {
+                        document.getElementById('resonantFreqDisplay').textContent = resonantFreqHz.toFixed(1) + ' Hz';
+                    }
+                    var impedance = Math.sqrt(inductance_H / (capacitance * 1e-12));
+                    document.getElementById('resonantImpedanceDisplay').textContent = impedance.toFixed(2) + ' \u03A9';
+                } else {
+                    document.getElementById('resonantFreqDisplay').textContent = '----';
+                    document.getElementById('resonantImpedanceDisplay').textContent = '----';
+                }
+
+                var mu0 = 4 * Math.PI * 1e-7;
+                if (resonantFreqHz > 0 && trackWidthMil > 0 && coilLengthMil > 0) {
+                    var skinDepthM = Math.sqrt(rho / (Math.PI * resonantFreqHz * mu0));
+                    var skinDepthMil = skinDepthM / 2.54e-5;
+                    document.getElementById('skinDepthDisplay').textContent = skinDepthMil.toFixed(2) + ' mil';
+
+                    var skinRatio = tMils / skinDepthMil;
+                    var rac = rdc * Math.sqrt(1 + skinRatio * skinRatio / 3);
+                    if (rac >= 1) {
+                        document.getElementById('acResistanceDisplay').textContent = rac.toFixed(2) + ' \u03A9';
+                    } else if (rac >= 1e-3) {
+                        document.getElementById('acResistanceDisplay').textContent = (rac * 1e3).toFixed(2) + ' m\u03A9';
+                    } else {
+                        document.getElementById('acResistanceDisplay').textContent = (rac * 1e6).toFixed(2) + ' \u03bc\u03A9';
+                    }
+
+                    var qFactor = 2 * Math.PI * resonantFreqHz * inductance_H / rac;
+                    document.getElementById('qFactorDisplay').textContent = qFactor.toFixed(2);
+                } else {
+                    document.getElementById('skinDepthDisplay').textContent = '----';
+                    document.getElementById('acResistanceDisplay').textContent = '----';
+                    document.getElementById('qFactorDisplay').textContent = '----';
+                }
+            }
+
+            document.getElementById('generateButton').addEventListener('click', function () {
+                var coilNum = Number(document.getElementById('coilNum').value);
+                var innerRadius = Number(document.getElementById('innerRadius').value);
+                var trackSpacing = Number(document.getElementById('trackSpacing').value);
+                var trackWidth = Number(document.getElementById('trackWidth').value);
+                var centerX = Number(document.getElementById('centerX').value);
+                var centerY = Number(document.getElementById('centerY').value);
+                var coilType = getSelectedCoilType();
+
+                outputParameters();
+
+                if (currentUnit === 'mm') {
+                    innerRadius = innerRadius / 0.0254;
+                    trackSpacing = trackSpacing / 0.0254;
+                    trackWidth = trackWidth / 0.0254;
+                    centerX = centerX / 0.0254;
+                    centerY = centerY / 0.0254;
+                }
+
+                if (coilType === 'spiral') {
+                    drawCoil(coilNum, innerRadius, trackSpacing, trackWidth, centerX, centerY);
+                } else if (coilType === 'square') {
+                    drawSquareCoil(coilNum, innerRadius, trackSpacing, trackWidth, centerX, centerY);
+                } else if (coilType === 'hexagon') {
+                    drawHexagonCoil(coilNum, innerRadius, trackSpacing, trackWidth, centerX, centerY);
+                } else if (coilType === 'octagon') {
+                    drawOctagonCoil(coilNum, innerRadius, trackSpacing, trackWidth, centerX, centerY);
+                }
+            });
+
+            document.getElementById('unit_mode').addEventListener('change', switchUnit);
+
+            document.querySelectorAll('input[type="number"]').forEach(function (input) {
+                input.addEventListener('input', outputParameters);
+                input.addEventListener('change', outputParameters);
+            });
+
+            document.querySelectorAll('input[name="coilType"]').forEach(function (radio) {
+                radio.addEventListener('change', outputParameters);
+            });
+        });
+    </script>
+</body>
+</html>

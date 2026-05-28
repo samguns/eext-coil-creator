@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-Hans">
+	<head>
+		<title>线圈生成器</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="stylesheet" type="text/css" href="/iframe/styles.css" />
+		<style></style>
+	</head>
+	<body>
+		<img src="/images/logo.png" alt="images" />
+		<img src="/iframe/logo.png" alt="iframe" />
+		<div class="btn-container">
+			<label class="switch btn-color-mode-switch">
+				<input value="1" id="color_mode" name="color_mode" type="checkbox" />
+				<label class="btn-color-mode-switch-inner" data-off="CN" data-on="EN" for="color_mode"></label>
+			</label>
+		</div>
+
+		<div>
+			<label id="coilNumLabel" for="coilNum">圈数:</label>
+			<input type="number" id="coilNum" value="20" min="1" />
+		</div>
+		<div>
+			<label id="innerRadiusLabel" for="innerRadius">内半径:</label>
+			<input type="number" id="innerRadius" value="10" min="1" />
+		</div>
+		<div>
+			<label id="trackSpacingLabel" for="trackSpacing">轨道间距:</label>
+			<input type="number" id="trackSpacing" value="4" min="1" />
+		</div>
+		<div>
+			<label id="trackWidthLabel" for="trackWidth">轨道宽度:</label>
+			<input type="number" id="trackWidth" value="4" min="1" />
+		</div>
+		<div>
+			<label id="centerXLabel" for="centerX">中心X坐标:</label>
+			<input type="number" id="centerX" value="0" />
+		</div>
+		<div>
+			<label id="centerYLabel" for="centerY">中心Y坐标:</label>
+			<input type="number" id="centerY" value="0" />
+		</div>
+		<div class="output">
+			<div class="parameter"><span id="inductancePrefix"></span><span id="inductance"></span> uH</div>
+			<div class="parameter"><span id="internalRadiusPrefix"></span><span id="internalRadiusMM"></span> mm</div>
+			<div class="parameter"><span id="internalDiameterPrefix"></span><span id="internalDiameterMM"></span> mm</div>
+			<div class="parameter"><span id="externalRadiusPrefix"></span><span id="externalRadiusMM"></span> mm</div>
+			<div class="parameter"><span id="externalDiameterPrefix"></span><span id="externalDiameterMM"></span> mm</div>
+		</div>
+		<button id="generateButton">生成线圈</button>
+		<script src="/iframe/script.js"></script>
+		<script></script>
+	</body>
+</html>

@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="zh-Hans">
+	<head>
+		<title>线圈生成器</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<style>
+			body {
+				font-family: 'Arial', sans-serif;
+				background-color: #f7f7f7;
+				padding: 20px;
+			}
+
+			.container {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-bottom: 10px;
+			}
+
+			label {
+				display: block;
+				margin-bottom: 5px;
+				color: #333;
+			}
+
+			input[type='number'],
+			button {
+				padding: 10px;
+				margin: 5px 0;
+				border: 1px solid #ddd;
+				border-radius: 5px;
+				background-color: #fff;
+				font-size: 16px;
+				transition: border-color 0.3s ease;
+			}
+
+			input[type='number']:focus,
+			button:focus,
+			button:hover {
+				border-color: #007bff;
+				outline: none;
+			}
+
+			button {
+				background-color: #007bff;
+				color: white;
+				cursor: pointer;
+				border: none;
+				border-radius: 5px;
+				font-size: 16px;
+			}
+
+			button:active {
+				background-color: #0056b3;
+			}
+
+			.output {
+				flex: 1;
+				margin-left: 20px;
+				padding: 10px;
+				border: 1.5px solid #ddd;
+				border-radius: 20px;
+				background-color: #fff;
+				text-align: left;
+			}
+
+			.parameter {
+				margin-bottom: 10px;
+			}
+
+			.split-line {
+				border-top: 1px solid #ddd;
+				margin: 10px 0;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<div>
+				<label for="coilNum">圈数:</label>
+				<input type="number" id="coilNum" value="20" min="1" />
+			</div>
+		</div>
+		<div class="container">
+			<div>
+				<label for="innerRadius">内半径:</label>
+				<input type="number" id="innerRadius" value="10" min="1" />
+			</div>
+		</div>
+		<div class="container">
+			<div>
+				<label for="trackSpacing">轨道间距:</label>
+				<input type="number" id="trackSpacing" value="4" min="1" />
+			</div>
+		</div>
+		<div class="container">
+			<div>
+				<label for="trackWidth">轨道宽度:</label>
+				<input type="number" id="trackWidth" value="4" min="1" />
+			</div>
+		</div>
+		<div class="container">
+			<div>
+				<label for="centerX">中心X坐标:</label>
+				<input type="number" id="centerX" value="0" />
+			</div>
+			<div class="output">
+				<div class="parameter">电感: <span id="inductance"></span> uH</div>
+				<div class="parameter">内直径: <span id="internalDiameterMM"></span> mm</div>
+				<div class="parameter">外直径: <span id="externalDiameterMM"></span> mm</div>
+			</div>
+		</div>
+		<div class="container">
+			<div>
+				<label for="centerY">中心Y坐标:</label>
+				<input type="number" id="centerY" value="0" />
+			</div>
+		</div>
+		<button id="generateButton">生成线圈</button>
+
+		<script>
+			updateParameters();
+			function updateParameters() {
+				const coilNum = Number(document.getElementById('coilNum').value);
+				const innerRadius = Number(document.getElementById('innerRadius').value);
+				const trackSpacing = Number(document.getElementById('trackSpacing').value);
+				const trackWidth = Number(document.getElementById('trackWidth').value);
+
+				const milsToMm = 0.0254;
+				const rInt = innerRadius * milsToMm;
+				const anchoPista = trackWidth * milsToMm;
+				const separacionPistas = trackSpacing * milsToMm;
+				const rExt = rInt + (coilNum + 1) * (anchoPista + separacionPistas);
+
+				const N = coilNum;
+				const Di = (rInt / 1000) * 2;
+				const A = (Di + N * (trackWidth / 1000 + trackSpacing / 1000)) / 2;
+				const inductance_uH = (Math.pow(A, 2) * Math.pow(N, 2)) / (30 * A - 11 * Di);
+
+				document.getElementById('inductance').textContent = inductance_uH.toLocaleString() + ' uH';
+				document.getElementById('internalDiameterMM').textContent = (rInt * 2).toLocaleString() + ' mm';
+				document.getElementById('externalDiameterMM').textContent = (rExt * 2).toLocaleString() + ' mm';
+
+				document.getElementById('displayCoilNum').textContent = coilNum;
+				document.getElementById('displayInnerRadius').textContent = innerRadius;
+				document.getElementById('displayTrackSpacing').textContent = trackSpacing;
+				document.getElementById('displayTrackWidth').textContent = trackWidth;
+				document.getElementById('displayCenterX').textContent = document.getElementById('centerX').value;
+				document.getElementById('displayCenterY').textContent = document.getElementById('centerY').value;
+			}
+
+			document.getElementById('generateButton').addEventListener('click', function () {
+				updateParameters();
+			});
+
+			// 监听输入框变化
+			document.querySelectorAll('input[type="number"]').forEach((input) => {
+				input.addEventListener('input', updateParameters);
+			});
+		</script>
+	</body>
+</html>

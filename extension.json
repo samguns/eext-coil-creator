@@ -1,0 +1,49 @@
+{
+  "name": "coil-creator",
+  "uuid": "8fc55bb0080e4576bd8a2e92f2eac894",
+  "displayName": "线圈生成器",
+  "description": "PCB线圈快捷生成工具",
+  "version": "1.3.0",
+  "publisher": "EasyEDA",
+  "engines": {
+    "eda": "^2.2.32"
+  },
+  "license": "MIT License",
+  "repository": {
+    "type": "github",
+    "url": "https://github.com/easyeda/eext-coil-creator"
+  },
+  "categories": "PCB",
+  "keywords": [
+    "Coil, NFC, PCB"
+  ],
+  "images": {
+    "logo": "./images/logo.png",
+    "banner": "./images/banner.png"
+  },
+  "homepage": "https://github.com/easyeda",
+  "bugs": "https://github.com/easyeda/eext-coil-creator/issues",
+  "activationEvents": {},
+  "entry": "./dist/index",
+  "dependentExtensions": {},
+  "headerMenus": {
+    "pcb": [
+      {
+        "id": "Coil",
+        "title": "线圈",
+        "menuItems": [
+          {
+            "id": "CoilCreate",
+            "title": "线圈生成器",
+            "registerFn": "openIframe"
+          },
+          {
+            "id": "About",
+            "title": "关于...",
+            "registerFn": "about"
+          }
+        ]
+      }
+    ]
+  }
+}

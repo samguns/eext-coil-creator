@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="zh-Hans">
+	<head>
+		<title>线圈生成器</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<style>
+			body {
+				font-family: 'Arial', sans-serif;
+				background-color: #f7f7f7;
+				padding: 20px;
+			}
+
+			div {
+				margin-bottom: 10px;
+			}
+
+			label {
+				display: block;
+				margin-bottom: 5px;
+				color: #333;
+			}
+
+			input[type='number'],
+			button {
+				padding: 10px;
+				margin: 5px 0;
+				border: 1px solid #ddd;
+				border-radius: 5px;
+				background-color: #fff;
+				font-size: 16px;
+				transition: border-color 0.3s ease;
+			}
+
+			input[type='number']:focus,
+			button:focus,
+			button:hover {
+				border-color: #007bff;
+				outline: none;
+			}
+
+			button {
+				background-color: #007bff;
+				color: white;
+				cursor: pointer;
+				border: none;
+				border-radius: 5px;
+				font-size: 16px;
+			}
+
+			button:active {
+				background-color: #0056b3;
+			}
+
+			.btn-container {
+				display: table-cell;
+				vertical-align: middle;
+				text-align: center;
+			}
+
+			.btn-color-mode-switch {
+				display: inline-block;
+				margin: 20px;
+				position: relative;
+			}
+
+			.btn-color-mode-switch > label.btn-color-mode-switch-inner {
+				margin: 0px;
+				width: 140px;
+				height: 40px;
+				background-color: #007bff;
+				border-radius: 22px;
+				overflow: hidden;
+				position: relative;
+				transition: all 0.3s ease;
+				display: block;
+			}
+
+			.btn-color-mode-switch > label.btn-color-mode-switch-inner:before {
+				content: attr(data-on);
+				position: absolute;
+				font-size: 20px;
+				font-weight: 600;
+				top: 7px;
+				right: 20px;
+				color: #222;
+			}
+
+			.btn-color-mode-switch > label.btn-color-mode-switch-inner:after {
+				content: attr(data-off);
+				width: 70px;
+				height: 25px;
+				background: #fff;
+				border-radius: 26px;
+				position: absolute;
+				font-size: 20px;
+				display: flex;
+				justify-content: center;
+				left: 2px;
+				top: 2px;
+				text-align: center;
+				transition: all 0.3s ease;
+				box-shadow: 0px 0px 6px -2px #111;
+				padding: 5px 0px;
+				color: #222;
+				font-weight: 600;
+			}
+
+			.btn-color-mode-switch input[type='checkbox'] {
+				cursor: pointer;
+				width: 50px;
+				height: 25px;
+				opacity: 0;
+				position: absolute;
+				top: 0;
+				z-index: 1;
+				margin: 0px;
+			}
+
+			.btn-color-mode-switch input[type='checkbox']:checked + label.btn-color-mode-switch-inner {
+				background-color: #007bff;
+			}
+
+			.btn-color-mode-switch input[type='checkbox']:checked + label.btn-color-mode-switch-inner:after {
+				content: attr(data-on);
+				left: 68px;
+			}
+
+			.btn-color-mode-switch input[type='checkbox']:checked + label.btn-color-mode-switch-inner:before {
+				content: attr(data-off);
+				right: auto;
+				left: 20px;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="btn-container">
+			<label class="switch btn-color-mode-switch">
+				<input value="1" id="color_mode" name="color_mode" type="checkbox" />
+				<label class="btn-color-mode-switch-inner" data-off="CN" data-on="EN" for="color_mode"></label>
+			</label>
+		</div>
+
+		<div>
+			<label id="coilNumLabel" for="coilNum">圈数:</label>
+			<input type="number" id="coilNum" value="20" min="1" />
+		</div>
+		<div>
+			<label id="innerRadiusLabel" for="innerRadius">内半径:</label>
+			<input type="number" id="innerRadius" value="10" min="1" />
+		</div>
+		<div>
+			<label id="trackSpacingLabel" for="trackSpacing">轨道间距:</label>
+			<input type="number" id="trackSpacing" value="4" min="1" />
+		</div>
+		<div>
+			<label id="trackWidthLabel" for="trackWidth">轨道宽度:</label>
+			<input type="number" id="trackWidth" value="4" min="1" />
+		</div>
+		<div>
+			<label id="centerXLabel" for="centerX">中心X坐标:</label>
+			<input type="number" id="centerX" value="0" />
+		</div>
+		<div>
+			<label id="centerYLabel" for="centerY">中心Y坐标:</label>
+			<input type="number" id="centerY" value="0" />
+		</div>
+		<div class="output">
+			<div class="parameter"><span id="inductancePrefix"></span><span id="inductance"></span> uH</div>
+			<div class="parameter"><span id="internalRadiusPrefix"></span><span id="internalRadiusMM"></span> mm</div>
+			<div class="parameter"><span id="internalDiameterPrefix"></span><span id="internalDiameterMM"></span> mm</div>
+			<div class="parameter"><span id="externalRadiusPrefix"></span><span id="externalRadiusMM"></span> mm</div>
+			<div class="parameter"><span id="externalDiameterPrefix"></span><span id="externalDiameterMM"></span> mm</div>
+		</div>
+		<button id="generateButton">生成线圈</button>
+
+		<script>
+			document.addEventListener('DOMContentLoaded', function () {
+				const languages = {
+					cn: {
+						coilNum: '圈数:',
+						innerRadius: '内半径:',
+						trackSpacing: '轨道间距:',
+						trackWidth: '轨道宽度:',
+						centerX: '中心X坐标:',
+						centerY: '中心Y坐标:',
+						inductance: '电感:',
+						internalRadiusMM: '内半径:',
+						internalDiameterMM: '内直径:',
+						externalRadiusMM: '外半径:',
+						externalDiameterMM: '外直径:',
+					},
+					en: {
+						coilNum: 'Number of turns:',
+						innerRadius: 'Inner radius:',
+						trackSpacing: 'Track spacing:',
+						trackWidth: 'Track width:',
+						centerX: 'Center X coordinate:',
+						centerY: 'Center Y coordinate:',
+						inductance: 'Inductance:',
+						internalRadiusMM: 'Internal radius:',
+						internalDiameterMM: 'Internal diameter:',
+						externalRadiusMM: 'External radius:',
+						externalDiameterMM: 'External diameter:',
+					},
+				};
+				let currentLanguage = 'cn'; // 默认语言为中文
+
+				function switchLanguage() {
+					currentLanguage = currentLanguage === 'cn' ? 'en' : 'cn'; // 切换语言
+					updateLanguage();
+				}
+
+				function updateLanguage() {
+					// 更新标签
+					document.getElementById('coilNumLabel').textContent = languages[currentLanguage].coilNum;
+					document.getElementById('innerRadiusLabel').textContent = languages[currentLanguage].innerRadius;
+					document.getElementById('trackSpacingLabel').textContent = languages[currentLanguage].trackSpacing;
+					document.getElementById('trackWidthLabel').textContent = languages[currentLanguage].trackWidth;
+					document.getElementById('centerXLabel').textContent = languages[currentLanguage].centerX;
+					document.getElementById('centerYLabel').textContent = languages[currentLanguage].centerY;
+
+					// 更新输出参数前的前缀
+					document.getElementById('inductancePrefix').textContent = languages[currentLanguage].inductance;
+					document.getElementById('internalRadiusPrefix').textContent = languages[currentLanguage].internalRadiusMM;
+					document.getElementById('internalDiameterPrefix').textContent = languages[currentLanguage].internalDiameterMM;
+					document.getElementById('externalRadiusPrefix').textContent = languages[currentLanguage].externalRadiusMM;
+					document.getElementById('externalDiameterPrefix').textContent = languages[currentLanguage].externalDiameterMM;
+				}
+
+				document.getElementById('color_mode').addEventListener('change', switchLanguage);
+				updateLanguage(); // 初始调用以设置正确的语言
+
+				function outputParameters() {
+					const milsToMm = 0.0254;
+
+					let coilNum = Number(document.getElementById('coilNum').value);
+					let innerRadius = Number(document.getElementById('innerRadius').value);
+					let trackSpacing = Number(document.getElementById('trackSpacing').value);
+					let trackWidth = Number(document.getElementById('trackWidth').value);
+
+					let innerRadiusMM = innerRadius * milsToMm;
+					let trackSpacingMM = trackSpacing * milsToMm;
+					let trackWidthMM = trackWidth * milsToMm;
+
+					// 计算内外半径
+					let rInt = innerRadiusMM;
+					let rExt = rInt + (coilNum + 1) * (trackSpacingMM + trackWidthMM);
+					// 更新内外半径和直径的显示
+					document.getElementById('internalRadiusMM').textContent = rInt.toLocaleString();
+					document.getElementById('internalDiameterMM').textContent = (rInt * 2).toLocaleString();
+					document.getElementById('externalRadiusMM').textContent = rExt.toLocaleString();
+					document.getElementById('externalDiameterMM').textContent = (rExt * 2).toLocaleString();
+
+					// 计算电感
+					let N = coilNum;
+					let Di = (innerRadius / 1000) * 2;
+					let A = (Di + N * (trackWidth / 1000 + trackSpacing / 1000)) / 2;
+					let inductance_uH = (Math.pow(A, 2) * Math.pow(N, 2)) / (30 * A - 11 * Di);
+					let inductance_H = inductance_uH * 1e-6;
+
+					// 根据电感值选择合适的单位并更新显示
+					if (inductance_H >= 1) document.getElementById('inductance').innerText = inductance_H.toLocaleString();
+					else if (inductance_H >= 1e-3) document.getElementById('inductance').innerText = (inductance_H * 1e3).toLocaleString();
+					else if (inductance_H >= 1e-6) document.getElementById('inductance').innerText = (inductance_H * 1e6).toLocaleString();
+					else if (inductance_H >= 1e-9) document.getElementById('inductance').innerText = (inductance_H * 1e9).toLocaleString();
+					else if (inductance_H >= 1e-12) document.getElementById('inductance').innerText = (inductance_H * 1e12).toLocaleString();
+					else if (inductance_H >= 1e-15) document.getElementById('inductance').innerText = (inductance_H * 1e15).toLocaleString();
+					else document.getElementById('inductance').innerText = '电感值过小';
+				}
+
+				document.getElementById('generateButton').addEventListener('click', function () {
+					let coilNum = Number(document.getElementById('coilNum').value);
+					let innerRadius = Number(document.getElementById('innerRadius').value);
+					let trackSpacing = Number(document.getElementById('trackSpacing').value);
+					let trackWidth = Number(document.getElementById('trackWidth').value);
+					let centerX = Number(document.getElementById('centerX').value);
+					let centerY = Number(document.getElementById('centerY').value);
+
+					outputParameters();
+				});
+
+				document.querySelectorAll('input[type="number"]').forEach((input) => {
+					input.addEventListener('input', outputParameters);
+				});
+			});
+		</script>
+	</body>
+</html>
