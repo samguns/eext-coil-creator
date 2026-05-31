@@ -535,6 +535,10 @@
                     <label id="centerYLabel" for="centerY">中心Y:</label>
                     <input type="number" id="centerY" value="0" />
                 </div>
+				<div class="param-item">
+                    <label id="clockwiseLabel" for="clockwise">顺时针:</label>
+                    <input type="checkbox" id="clockwise" />
+                </div>
             </div>
         </div>
 
@@ -648,6 +652,7 @@
             const languages = {
                 cn: {
                     coilNum: '圈数:',
+                    clockwise: '顺时针:',
                     innerRadius: '内半径:',
                     trackSpacing: '轨道间距:',
                     trackWidth: '轨道宽度:',
@@ -684,6 +689,7 @@
                 },
                 en: {
                     coilNum: 'Turns:',
+                    clockwise: 'Clockwise:',
                     innerRadius: 'Inner radius:',
                     trackSpacing: 'Spacing:',
                     trackWidth: 'Width:',
@@ -739,6 +745,11 @@
                 return checked ? checked.value : 'spiral';
             }
 
+            function getSelectedClockwise() {
+                const checkbox = document.getElementById('clockwise');
+                return checkbox ? checkbox.checked : false;
+            }
+
             function toggleAdvanced() {
                 advancedExpanded = !advancedExpanded;
                 const header = document.getElementById('advancedToggle');
@@ -788,14 +799,14 @@
                 const delta = (trackSpacing + trackWidth) / 6;
                 const L0 = innerRadius / 2;
                 const segments = coilNum * 6;
-                return segments * L0 + delta * (segments - 1) * segments / 2;
+                return segments * L0 + (delta * (segments - 1) * segments) / 2;
             }
 
             function calcOctagonLength(coilNum, innerRadius, trackSpacing, trackWidth) {
                 const delta = (trackSpacing + trackWidth) / 8;
                 const L0 = innerRadius / 2;
                 const segments = coilNum * 8;
-                return segments * L0 + delta * (segments - 1) * segments / 2;
+					return segments * L0 + (delta * (segments - 1) * segments) / 2;
             }
 
             function calcCoilLength(coilType, coilNum, innerRadius, trackSpacing, trackWidth) {
@@ -811,10 +822,13 @@
                 return 0;
             }
 
-            async function drawCoil(coilNum = 100, innerRadius = 10, trackSpacing = 4, trackWidth = 4, centerX = 0, centerY = 0) {
+            async function drawCoil(coilNum = 100, innerRadius = 10, trackSpacing = 4, trackWidth = 4, centerX = 0, centerY = 0, clockwise = false) {
                 const safetyLimit = 1000000;
                 const angleStep = 0.1;
+                const direction = clockwise ? -1 : 1;
                 const radiusStep = (trackSpacing + trackWidth) / (2 * Math.PI);
+                const totalAngle = coilNum * 2 * Math.PI;
+                const totalSteps = Math.floor(totalAngle / angleStep);
                 let Coils = [];
                 let radius = innerRadius;
                 let turns = 0;
@@ -822,8 +836,8 @@
                 let i = 0;
 
                 while (turns <= coilNum && i < safetyLimit) {
-                    analog = angleStep * i;
-                    radius = innerRadius + radiusStep * analog;
+                    analog = direction * angleStep * i;
+                    const radius = innerRadius + radiusStep * angleStep * i;
                     Coils.push({
                         x: centerX + radius * Math.cos(analog),
                         y: centerY + radius * Math.sin(analog),
@@ -844,7 +858,8 @@
                 }
             }
 
-            async function drawSquareCoil(coilNum = 20, innerRadius = 10, trackSpacing = 10, trackWidth = 4, centerX = 0, centerY = 0) {
+            async function drawSquareCoil(coilNum = 20, innerRadius = 10, trackSpacing = 10, trackWidth = 4, centerX = 0, centerY = 0, clockwise = false) {
+                const direction = clockwise ? -1 : 1;
                 let x1 = centerX;
                 let y1 = centerY;
                 let x2 = centerX;
@@ -856,7 +871,7 @@
                 x1 = x2;
                 y1 = y2;
 
-                y2 += innerRadius;
+                y2 += innerRadius * direction;
                 await eda.pcb_PrimitiveLine.create('GND', 1, x1, y1, x2, y2, trackWidth, false);
                 x1 = x2;
                 y1 = y2;
@@ -871,7 +886,7 @@
                         j++;
                     }
                     if (j == 1) {
-                        y2 = y2 - (2 * innerRadius + 2 * (i - 1) * (trackSpacing + trackWidth));
+                        y2 = y2 - (2 * innerRadius + 2 * (i - 1) * (trackSpacing + trackWidth)) * direction;
                         await eda.pcb_PrimitiveLine.create('GND', 1, x1, y1, x2, y2, trackWidth, false);
                         x1 = x2;
                         y1 = y2;
@@ -885,7 +900,7 @@
                         j++;
                     }
                     if (j == 3) {
-                        y2 = y2 + (2 * innerRadius + (2 * i - 1) * (trackSpacing + trackWidth));
+                        y2 = y2 + (2 * innerRadius + (2 * i - 1) * (trackSpacing + trackWidth)) * direction;
                         await eda.pcb_PrimitiveLine.create('GND', 1, x1, y1, x2, y2, trackWidth, false);
                         x1 = x2;
                         y1 = y2;
@@ -895,7 +910,8 @@
                 }
             }
 
-            async function drawHexagonCoil(coilNum = 10, innerRadius = 20, trackSpacing = 20, trackWidth = 4, centerX = 0, centerY = 0) {
+            async function drawHexagonCoil(coilNum = 10, innerRadius = 20, trackSpacing = 20, trackWidth = 4, centerX = 0, centerY = 0, clockwise = false) {
+                const direction = clockwise ? -1 : 1;
                 const delta = (trackSpacing + trackWidth) / 6;
                 const L0 = innerRadius / 2;
                 const totalSegments = coilNum * 6;
@@ -905,7 +921,7 @@
 
                 for (let n = 0; n < totalSegments; n++) {
                     const segmentLength = L0 + n * delta;
-                    const angleRad = n * Math.PI / 3;
+                    const angleRad = (direction * n * Math.PI) / 3;
                     const x2 = x + segmentLength * Math.cos(angleRad);
                     const y2 = y + segmentLength * Math.sin(angleRad);
 
@@ -918,7 +934,8 @@
                 }
             }
 
-            async function drawOctagonCoil(coilNum = 10, innerRadius = 20, trackSpacing = 20, trackWidth = 4, centerX = 0, centerY = 0) {
+            async function drawOctagonCoil(coilNum = 10, innerRadius = 20, trackSpacing = 20, trackWidth = 4, centerX = 0, centerY = 0, clockwise = false) {
+                const direction = clockwise ? -1 : 1;
                 const delta = (trackSpacing + trackWidth) / 8;
                 const L0 = innerRadius / 2;
                 const totalSegments = coilNum * 8;
@@ -928,7 +945,7 @@
 
                 for (let n = 0; n < totalSegments; n++) {
                     const segmentLength = L0 + n * delta;
-                    const angleRad = n * Math.PI / 4;
+                    const angleRad = (direction * n * Math.PI) / 4;
                     const x2 = x + segmentLength * Math.cos(angleRad);
                     const y2 = y + segmentLength * Math.sin(angleRad);
 
@@ -953,6 +970,7 @@
                 const unitSuffix = currentUnit === 'mil' ? lang.unitMilLabel : lang.unitMmLabel;
 
                 document.getElementById('coilNumLabel').textContent = lang.coilNum;
+                document.getElementById('clockwiseLabel').textContent = lang.clockwise;
                 document.getElementById('innerRadiusLabel').textContent = lang.innerRadius + unitSuffix;
                 document.getElementById('trackSpacingLabel').textContent = lang.trackSpacing + unitSuffix;
                 document.getElementById('trackWidthLabel').textContent = lang.trackWidth + unitSuffix;
@@ -1144,6 +1162,7 @@
                 var centerX = Number(document.getElementById('centerX').value);
                 var centerY = Number(document.getElementById('centerY').value);
                 var coilType = getSelectedCoilType();
+                var clockwise = getSelectedClockwise();
 
                 outputParameters();
 
@@ -1156,13 +1175,13 @@
                 }
 
                 if (coilType === 'spiral') {
-                    drawCoil(coilNum, innerRadius, trackSpacing, trackWidth, centerX, centerY);
+                    drawCoil(coilNum, innerRadius, trackSpacing, trackWidth, centerX, centerY, clockwise);
                 } else if (coilType === 'square') {
-                    drawSquareCoil(coilNum, innerRadius, trackSpacing, trackWidth, centerX, centerY);
+                    drawSquareCoil(coilNum, innerRadius, trackSpacing, trackWidth, centerX, centerY, clockwise);
                 } else if (coilType === 'hexagon') {
-                    drawHexagonCoil(coilNum, innerRadius, trackSpacing, trackWidth, centerX, centerY);
+                    drawHexagonCoil(coilNum, innerRadius, trackSpacing, trackWidth, centerX, centerY, clockwise);
                 } else if (coilType === 'octagon') {
-                    drawOctagonCoil(coilNum, innerRadius, trackSpacing, trackWidth, centerX, centerY);
+                    drawOctagonCoil(coilNum, innerRadius, trackSpacing, trackWidth, centerX, centerY, clockwise);
                 }
             });
 
