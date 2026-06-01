@@ -539,6 +539,10 @@
                     <label id="clockwiseLabel" for="clockwise">顺时针:</label>
                     <input type="checkbox" id="clockwise" />
                 </div>
+				<div class="param-item">
+					<label id="spiralCoilSegmentLabel" for="spiralCoilSegment">螺旋线圈段数:</label>
+					<input type="number" id="spiralCoilSegment" value="32" min="4" />
+				</div>
             </div>
         </div>
 
@@ -653,6 +657,7 @@
                 cn: {
                     coilNum: '圈数:',
                     clockwise: '顺时针:',
+                    spiralCoilSegment: '螺旋线圈段数:',
                     innerRadius: '内半径:',
                     trackSpacing: '轨道间距:',
                     trackWidth: '轨道宽度:',
@@ -690,6 +695,7 @@
                 en: {
                     coilNum: 'Turns:',
                     clockwise: 'Clockwise:',
+                    spiralCoilSegment: 'Spiral Coil Segments:',
                     innerRadius: 'Inner radius:',
                     trackSpacing: 'Spacing:',
                     trackWidth: 'Width:',
@@ -763,22 +769,45 @@
                 }
             }
 
-            function calcSpiralLength(coilNum, innerRadius, trackSpacing, trackWidth) {
-                const angleStep = 0.1;
+            function getSpiralCoilSegment() {
+                const segmentInput = document.getElementById('spiralCoilSegment');
+                const segmentCount = segmentInput ? Number(segmentInput.value) : 32;
+                return Math.max(4, Math.floor(segmentCount) || 32);
+            }
+
+            function getSpiralPoint(angle, direction, innerRadius, radiusStep, centerX = 0, centerY = 0) {
+                const signedAngle = direction * angle;
+                const radius = innerRadius + radiusStep * angle;
+                return {
+                    x: centerX + radius * Math.cos(signedAngle),
+                    y: centerY + radius * Math.sin(signedAngle),
+                    radius,
+                };
+            }
+
+            function calcTwoPointArcAngle(startPoint, endPoint, arcRadius, direction) {
+                const chordLength = Math.sqrt((endPoint.x - startPoint.x) * (endPoint.x - startPoint.x) + (endPoint.y - startPoint.y) * (endPoint.y - startPoint.y));
+                if (chordLength === 0 || arcRadius <= 0) {
+                    return 0;
+                }
+                const ratio = Math.min(1, chordLength / (2 * arcRadius));
+                return direction * 2 * Math.asin(ratio);
+            }
+
+            function calcSpiralLength(coilNum, innerRadius, trackSpacing, trackWidth, spiralCoilSegment = 32) {
                 const radiusStep = (trackSpacing + trackWidth) / (2 * Math.PI);
                 const totalAngle = coilNum * 2 * Math.PI;
-                const steps = Math.floor(totalAngle / angleStep);
+                const totalSegments = Math.max(1, Math.ceil(coilNum * Math.max(4, Math.floor(spiralCoilSegment) || 32)));
+                const angleStep = totalAngle / totalSegments;
+                const direction = 1;
                 let total = 0;
-                let px = innerRadius;
-                let py = 0;
-                for (let i = 1; i <= steps; i++) {
-                    const a = angleStep * i;
-                    const r = innerRadius + radiusStep * a;
-                    const cx = r * Math.cos(a);
-                    const cy = r * Math.sin(a);
-                    total += Math.sqrt((cx - px) * (cx - px) + (cy - py) * (cy - py));
-                    px = cx;
-                    py = cy;
+                let previousPoint = getSpiralPoint(0, direction, innerRadius, radiusStep);
+                for (let i = 1; i <= totalSegments; i++) {
+                    const point = getSpiralPoint(angleStep * i, direction, innerRadius, radiusStep);
+                    const arcRadius = (previousPoint.radius + point.radius) / 2;
+                    const arcAngle = calcTwoPointArcAngle(previousPoint, point, arcRadius, direction);
+                    total += arcRadius * Math.abs(arcAngle);
+                    previousPoint = point;
                 }
                 return total;
             }
@@ -809,9 +838,9 @@
 					return segments * L0 + (delta * (segments - 1) * segments) / 2;
             }
 
-            function calcCoilLength(coilType, coilNum, innerRadius, trackSpacing, trackWidth) {
+            function calcCoilLength(coilType, coilNum, innerRadius, trackSpacing, trackWidth, spiralCoilSegment = 32) {
                 if (coilType === 'spiral') {
-                    return calcSpiralLength(coilNum, innerRadius, trackSpacing, trackWidth);
+                    return calcSpiralLength(coilNum, innerRadius, trackSpacing, trackWidth, spiralCoilSegment);
                 } else if (coilType === 'square') {
                     return calcSquareLength(coilNum, innerRadius, trackSpacing, trackWidth);
                 } else if (coilType === 'hexagon') {
@@ -822,39 +851,21 @@
                 return 0;
             }
 
-            async function drawCoil(coilNum = 100, innerRadius = 10, trackSpacing = 4, trackWidth = 4, centerX = 0, centerY = 0, clockwise = false) {
-                const safetyLimit = 1000000;
-                const angleStep = 0.1;
+            async function drawCoil(coilNum = 100, innerRadius = 10, trackSpacing = 4, trackWidth = 4, centerX = 0, centerY = 0, clockwise = false, spiralCoilSegment = 32) {
                 const direction = clockwise ? -1 : 1;
                 const radiusStep = (trackSpacing + trackWidth) / (2 * Math.PI);
                 const totalAngle = coilNum * 2 * Math.PI;
-                const totalSteps = Math.floor(totalAngle / angleStep);
-                let Coils = [];
-                let radius = innerRadius;
-                let turns = 0;
-                let analog = 0;
-                let i = 0;
+                const totalSegments = Math.max(1, Math.ceil(coilNum * Math.max(4, Math.floor(spiralCoilSegment) || 32)));
+                const angleStep = totalAngle / totalSegments;
+                const twoPointArcMode = 1;
 
-                while (turns <= coilNum && i < safetyLimit) {
-                    analog = direction * angleStep * i;
-                    const radius = innerRadius + radiusStep * angleStep * i;
-                    Coils.push({
-                        x: centerX + radius * Math.cos(analog),
-                        y: centerY + radius * Math.sin(analog),
-                    });
-
-                    if (i > 0) {
-                        let lastPoint = Coils[Coils.length - 1];
-                        let secondLastPoint = Coils[Coils.length - 2];
-                        if ((secondLastPoint.y <= centerY && lastPoint.y > centerY) || (secondLastPoint.y < centerY && lastPoint.y >= centerY)) {
-                            turns++;
-                        }
-                    }
-
-                    i++;
-                }
-                for (let i = 1; i < Coils.length; i++) {
-                    await eda.pcb_PrimitiveLine.create('GND', 1, Coils[i - 1].x, Coils[i - 1].y, Coils[i].x, Coils[i].y, trackWidth, false);
+                let previousPoint = getSpiralPoint(0, direction, innerRadius, radiusStep, centerX, centerY);
+                for (let i = 1; i <= totalSegments; i++) {
+                    const point = getSpiralPoint(angleStep * i, direction, innerRadius, radiusStep, centerX, centerY);
+                    const arcRadius = (previousPoint.radius + point.radius) / 2;
+                    const arcAngle = (calcTwoPointArcAngle(previousPoint, point, arcRadius, direction) * 180) / Math.PI;
+                    await eda.pcb_PrimitiveArc.create('GND', 1, previousPoint.x, previousPoint.y, point.x, point.y, arcAngle, trackWidth, twoPointArcMode, false);
+                    previousPoint = point;
                 }
             }
 
@@ -971,6 +982,7 @@
 
                 document.getElementById('coilNumLabel').textContent = lang.coilNum;
                 document.getElementById('clockwiseLabel').textContent = lang.clockwise;
+                document.getElementById('spiralCoilSegmentLabel').textContent = lang.spiralCoilSegment;
                 document.getElementById('innerRadiusLabel').textContent = lang.innerRadius + unitSuffix;
                 document.getElementById('trackSpacingLabel').textContent = lang.trackSpacing + unitSuffix;
                 document.getElementById('trackWidthLabel').textContent = lang.trackWidth + unitSuffix;
@@ -1026,6 +1038,7 @@
                 var innerRadius = Number(document.getElementById('innerRadius').value);
                 var trackSpacing = Number(document.getElementById('trackSpacing').value);
                 var trackWidth = Number(document.getElementById('trackWidth').value);
+                var spiralCoilSegment = getSpiralCoilSegment();
                 var coilType = getSelectedCoilType();
 
                 var rInt = innerRadius;
@@ -1055,7 +1068,7 @@
                 var trackWidthMil = currentUnit === 'mm' ? trackWidth / 0.0254 : trackWidth;
                 var trackSpacingMil = currentUnit === 'mm' ? trackSpacing / 0.0254 : trackSpacing;
 
-                var coilLengthMil = calcCoilLength(coilType, coilNum, innerRadiusMil, trackSpacingMil, trackWidthMil);
+                var coilLengthMil = calcCoilLength(coilType, coilNum, innerRadiusMil, trackSpacingMil, trackWidthMil, spiralCoilSegment);
                 var coilLengthDisplay = currentUnit === 'mm' ? coilLengthMil * 0.0254 : coilLengthMil;
                 document.getElementById('coilTotalLengthDisplay').textContent = coilLengthDisplay.toLocaleString();
 
@@ -1159,6 +1172,7 @@
                 var innerRadius = Number(document.getElementById('innerRadius').value);
                 var trackSpacing = Number(document.getElementById('trackSpacing').value);
                 var trackWidth = Number(document.getElementById('trackWidth').value);
+                var spiralCoilSegment = getSpiralCoilSegment();
                 var centerX = Number(document.getElementById('centerX').value);
                 var centerY = Number(document.getElementById('centerY').value);
                 var coilType = getSelectedCoilType();
@@ -1175,7 +1189,7 @@
                 }
 
                 if (coilType === 'spiral') {
-                    drawCoil(coilNum, innerRadius, trackSpacing, trackWidth, centerX, centerY, clockwise);
+                    drawCoil(coilNum, innerRadius, trackSpacing, trackWidth, centerX, centerY, clockwise, spiralCoilSegment);
                 } else if (coilType === 'square') {
                     drawSquareCoil(coilNum, innerRadius, trackSpacing, trackWidth, centerX, centerY, clockwise);
                 } else if (coilType === 'hexagon') {
